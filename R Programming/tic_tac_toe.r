@@ -126,6 +126,14 @@ check_if_game_over <- function(board) {
             return(TRUE)
         }
     }
+    main_diagonal <- c(board[1, 1], board[2,2], board[3,3])
+    if (is_winner_line(main_diagonal)) {
+        return(TRUE)
+    }
+    minor_diagonal <- c(board[3, 1], board[2,2], board[1, 3])
+    if (is_winner_line(minor_diagonal)) {
+        return(TRUE)
+    }
     return(FALSE)
 }
 
@@ -194,8 +202,29 @@ make_computer_move <- function(board) {
             return(board)
         }
     }
+    main_diagonal <- c(board[1,1], board[2,2], board[3,3])
+    if (is_almost_winner_line(main_diagonal, "o")) {
+        free_space <- which(main_diagonal == " ")
+        board[free_space, free_space] <- "o"
+        return(board)
+    }
+    minor_diagonal <- c(board[3, 1], board[2,2], board[1,3])
+    if (is_almost_winner_line(minor_diagonal, "o")) {
+        free_space <- which(minor_diagonal == " ")
+        if (free_space == 1) {
+            board[3, 1] <- "o"
+            return(board)
+        }
+        if (free_space == 2) {
+            board[2,2] <- "o"
+            return(board)
+        }
+        if (free_space == 3) {
+            board[1, 3] <- "o"
+            return(board)
+        }
+    }
 
-    print("Nothing to finish")
     # Try to prevent opponent winning
     for (i in 1:3) {
         if (is_almost_winner_line(board[, i], "x")) {
@@ -207,7 +236,27 @@ make_computer_move <- function(board) {
             return(board)
         }
     }
-    print("Nothing to prevent")
+    if (is_almost_winner_line(main_diagonal, "x")) {
+        free_space <- which(main_diagonal == " ")
+        board[free_space, free_space] <- "o"
+        return(board)
+    }
+    if (is_almost_winner_line(minor_diagonal, "x")) {
+        free_space <- which(minor_diagonal == " ")
+        if (free_space == 1) {
+            board[3, 1] <- "o"
+            return(board)
+        }
+        if (free_space == 2) {
+            board[2,2] <- "o"
+            return(board)
+        }
+        if (free_space == 3) {
+            board[1, 3] <- "o"
+            return(board)
+        }
+    }
+
 
     # If there are no danger, play at random
     free_space <- sample(which(board == " "), 1)
@@ -219,7 +268,8 @@ make_computer_move <- function(board) {
 human_vs_computer_mode <- function() {
     board <- matrix(nrow = 3, ncol = 3, " ")
     player_turn <- 1
-    for (current_step in 1:9) {
+    current_step <- 1
+    repeat {
         board <- make_human_move(board, player_turn)
         is_game_over <- check_if_game_over(board)
         if (is_game_over) {
@@ -228,6 +278,13 @@ human_vs_computer_mode <- function() {
             print(board)
             return()
         }
+        current_step <- current_step + 1
+        if (current_step == 10) {
+            print_interface('       A tie!')
+            print(board)
+            return()
+        }
+
         board <- make_computer_move(board)
         is_game_over <- check_if_game_over(board)
         if (is_game_over) {
@@ -236,6 +293,8 @@ human_vs_computer_mode <- function() {
             print(board)
             return()
         }
+        current_step <- current_step + 1
+
     }
 }
 
