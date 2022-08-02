@@ -57,7 +57,7 @@ main <- function() {
         human_vs_human_mode()
     }
     if (game_mode == 2) {
-
+        human_vs_computer_mode()
     }
 }
 
@@ -132,9 +132,7 @@ check_if_game_over <- function(board) {
 
 human_vs_human_mode <- function() {
     board <- matrix(nrow = 3, ncol = 3, " ")
-    is_game_over <- FALSE
     player_turn <- 1
-    current_step = 1
     for (current_step in 1:9) {
         board <- make_human_move(board, player_turn)
         is_game_over <- check_if_game_over(board)
@@ -157,6 +155,88 @@ human_vs_human_mode <- function() {
     print_interface('       A tie!')
     print(board)
     return()
+}
+
+
+is_almost_winner_line <- function(line, symbol) {
+    total_free <- 0
+    total_symbol <- 0
+    for (i in 1:3) {
+        if (line[i] == " ") {
+            total_free <- total_free + 1
+        } else {
+            if (line[i] == symbol) {
+                total_symbol <- total_symbol + 1
+            } else {
+                return(FALSE)
+            }
+        }
+    }
+    if (total_free == 1 & total_symbol == 2) {
+        return(TRUE)
+    } else {
+        return(FALSE)
+    }
+}
+
+
+make_computer_move <- function(board) {
+    win_line <- c("o", "o", "o")
+
+    # Try to finish any line
+    for (i in 1:3) {
+        if (is_almost_winner_line(board[, i], "o")) {
+            board[, i] <- win_line
+            return(board)
+        }
+        if (is_almost_winner_line(board[i, ], "o")) {
+            board[i, ] <- win_line
+            return(board)
+        }
+    }
+
+    print("Nothing to finish")
+    # Try to prevent opponent winning
+    for (i in 1:3) {
+        if (is_almost_winner_line(board[, i], "x")) {
+            board[which(board[, i] == " "), i] <- "o"
+            return(board)
+        }
+        if (is_almost_winner_line(board[i, ], "x")) {
+            board[i, which(board[i, ] == " ")] <- "o"
+            return(board)
+        }
+    }
+    print("Nothing to prevent")
+
+    # If there are no danger, play at random
+    free_space <- sample(which(board == " "), 1)
+    board[free_space] <- "o"
+    return(board)
+}
+
+
+human_vs_computer_mode <- function() {
+    board <- matrix(nrow = 3, ncol = 3, " ")
+    player_turn <- 1
+    for (current_step in 1:9) {
+        board <- make_human_move(board, player_turn)
+        is_game_over <- check_if_game_over(board)
+        if (is_game_over) {
+            header <- ("You won!")
+            print_interface(header)
+            print(board)
+            return()
+        }
+        board <- make_computer_move(board)
+        is_game_over <- check_if_game_over(board)
+        if (is_game_over) {
+            header <- ("Computer won!")
+            print_interface(header)
+            print(board)
+            return()
+        }
+    }
 }
 
 main()
