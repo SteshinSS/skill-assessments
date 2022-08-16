@@ -1,0 +1,134 @@
+---
+title: "R for Data Science"
+author: "Simon"
+date: "2022-08-07"
+  html_document:
+    theme: united
+    highlight: tango
+---
+
+## R for Data Science
+
+```{r, imports}
+library(tidyverse)
+library(plotly)
+gapminder <- read_csv('gapminder_clean.csv')
+```
+
+```{r, CO2 emissions vs per Capita GDP}
+gapminder <- rename(gapminder, co_emissions = 'CO2 emissions (metric tons per capita)')
+gapminder_1962 <- filter(gapminder, Year == 1962)
+gapminder_1962 %>%
+  ggplot(aes(x = co_emissions, y = gdpPercap)) +
+  geom_point(na.rm = TRUE) +
+  labs(x = 'CO2 emissions (metric tons per capita)', y = 'GDP per Capita', title = 'CO2 emissions vs per Capita GDP, 1962')
+```
+
+```{r, correlation of CO2 emissions and GDP}
+test_result = cor.test(as.matrix(gapminder_1962['co_emissions']), as.matrix(gapminder_1962['gdpPercap']))
+print('Correlation of CO Emissions vs GDP per cap:')
+print(test_result$estimate)
+print('p-value:')
+print(test_result$p.value)
+```
+
+```{r, correlations}
+gapminder_by_year <- group_by(gapminder, Year)
+correlations <- summarise(gapminder_by_year, r_coef = cor(x = gdpPercap,y = co_emissions, use = "complete.obs"))
+max_idx = which.max(correlations$r_coef)
+print('Maximal correlation:')
+correlations$r_coef[max_idx]
+print('Year of such correlation:')
+correlations$Year[max_idx]
+best_year <- correlations$Year[max_idx]
+```
+
+
+```{r, plotly}
+x <- gapminder %>%
+  filter(Year == best_year) %>%
+  ggplot(aes(x = gdpPercap, 
+             y = co_emissions)) +
+  geom_point(aes(color = continent,
+                 size = pop, 
+                 alpha = 0.3))
+ggplotly(x)
+
+```
+
+```{r}
+gapminder <- rename(gapminder, energy_use = 'Energy use (kg of oil equivalent per capita)')
+gapminder %>%
+  drop_na() %>%
+  ggplot() + geom_boxplot(mapping = aes(x = continent, y = energy_use), na.rm=TRUE)
+
+```
+
+
+```{r}
+aov_result <- aov(energy_use ~ continent, data = gapminder)
+summary(aov_result)
+aov_result$coefficients
+print('There is a statistically significant difference between continent and energy use')
+```
+```{r}
+eurasia <- filter(gapminder, continent %in% c('Asia', 'Europe'), Year > 1990)
+eurasia <- rename(eurasia, import = 'Imports of goods and services (% of GDP)')
+eurasia %>%
+  drop_na() %>%
+  ggplot() + geom_boxplot(mapping = aes(x = continent, y = import), na.rm=TRUE)
+```
+
+```{r}
+aov_result <- aov(import ~ continent, data = drop_na(eurasia, import))
+summary(aov_result)
+aov_result$coefficients
+print('There is no statistically significant difference in import gdp% between Europa and Asia')
+```
+
+```{r}
+mean_pop_density <- gapminder %>%
+  rename(pop_density = 'Population density (people per sq. km of land area)', country = 'Country Name') %>%
+  group_by(country) %>%
+  summarise(mean(pop_density))
+
+max_idx = which.max(mean_pop_density$`mean(pop_density)`)
+print('Country with the highest population density:')
+print(mean_pop_density$country[max_idx])
+
+```
+
+```{r}
+current_year = max(gapminder$Year)
+current_table <- gapminder %>%
+  filter(Year == current_year) %>%
+  select(`Country Name`, Year, 'Life expectancy at birth, total (years)')
+
+past_table <- gapminder %>%
+  filter(Year == 1962) %>%
+  select(`Country Name`, Year, 'Life expectancy at birth, total (years)')
+
+best_country = NA
+best_increase = NA
+for (country in current_table$`Country Name`) {
+  past_country <- past_table %>% filter(`Country Name` == country)
+  was <- past_country$'Life expectancy at birth, total (years)'
+  
+  current_country <- current_table %>% filter(`Country Name` == country)
+  became <- current_country$'Life expectancy at birth, total (years)'
+  increase <-  became - was
+  if (!isTRUE(is.na(increase))) {
+    if (isTRUE(is.na(best_increase)) | isTRUE((best_increase < increase))) {
+      best_increase <-  increase
+      best_country <- country
+    }
+  }
+  
+}
+print('Best increase of the life expectancy at birth since 1962 was in:')
+print(best_country)
+```
+
+
+
+
